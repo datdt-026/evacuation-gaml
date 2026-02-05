@@ -1,0 +1,8 @@
+# Backup files
+*_backup.gaml
+
+# Excluded HTML
+Tsunami Evacuation Simulation(2).html
+
+# OS files
+.DS_Store
