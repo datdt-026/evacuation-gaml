@@ -297,7 +297,13 @@ species inhabitant skills: [moving] {
                     do die;
                 }
             } else {
-                // 90%: move to random building to search
+                // 90%: move to random buildings to search; if < 20m from shelter, switch above
+                if search_target = nil {
+                    building rand_b <- one_of(building where (!each.is_shelter));
+                    if rand_b != nil {
+                        search_target <- any_location_in(rand_b);
+                    }
+                }
                 if search_target != nil {
                     do goto target: search_target on: road_network speed: effective_speed;
 
