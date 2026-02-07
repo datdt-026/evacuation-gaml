@@ -114,15 +114,16 @@ global {
     reflex update_traffic when: cycle >= flood_start_cycle {
         // Only need traffic when people evacuate/flee (after flood starts)
         traffic_density <- road as_map (each::0.0);
-        // Loop: iterate inhabitants (3000) instead of roads (thousands) - much faster
         ask inhabitant {
             road r <- road closest_to self;
             if r != nil and (self.location distance_to r.shape < 15.0) {
                 traffic_density[r] <- traffic_density[r] + 1;
             }
         }
+        // Normalize: divide by 8 so 2-3 people on a road already show yellow/red
         ask road {
-            traffic_density[self] <- min(1.0, traffic_density[self] / 20.0);
+            traffic_density[self] <- min(1.0, traffic_density[self] / 8.0);
+            self.current_density <- traffic_density[self];  // store on agent for display
         }
     }
 
@@ -225,8 +226,21 @@ species building {
 }
 
 species road {
+    float current_density <- 0.0;  // updated each cycle in update_traffic (when cycle >= flood_start_cycle)
     aspect default {
-        draw shape color: #black;
+        // Highlight congestion: black (no traffic) -> green -> yellow -> red (congested)
+        float density <- current_density;
+        rgb road_color;
+        if density <= 0.0 {
+            road_color <- #black;
+        } else if density < 0.2 {
+            road_color <- rgb(0, 200, 0);  // green = low
+        } else if density < 0.5 {
+            road_color <- rgb(255, 220, 0);  // yellow = medium
+        } else {
+            road_color <- rgb(255, 0, 0);   // red = congested
+        }
+        draw shape color: road_color border: rgb(60, 60, 60);
     }
 }
 
@@ -359,6 +373,10 @@ experiment flood_ext2_exp type: gui {
             species road;
             species building;
             species inhabitant;
+            graphics "Traffic legend" {
+                draw circle(4) at: {15, 15} color: #green border: #black;
+                draw circle(4) at: {15, 28} color: #red border: #black;
+            }
         }
 
         display "Information Spread Chart" {

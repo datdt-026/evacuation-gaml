@@ -40,6 +40,7 @@ global {
     float information_spread_rate <- 0.1;
     float information_spread_distance <- 10.0;  // 10m theo slide
     float shelter_detection_distance <- 20.0;   // 20m: switch to direct movement
+    float shelter_knowledge_ratio <- 0.1;       // Among aware: fraction who know shelter location (0.1 = 10%)
     int nb_inhabitants <- 3000;
 
     init {
@@ -89,8 +90,8 @@ global {
             }
             home <- location;
             is_aware <- flip(0.1);  // 10% initially notified
-            // Extension 1: Only 10% of aware know shelter location
-            knows_shelter_location <- is_aware ? flip(0.1) : false;
+            // Extension 1: shelter_knowledge_ratio of aware know shelter location
+            knows_shelter_location <- is_aware ? flip(shelter_knowledge_ratio) : false;
             if is_aware and !knows_shelter_location {
                 building rand_b <- one_of(building where (!each.is_shelter));
                 if rand_b != nil {
@@ -227,7 +228,7 @@ species inhabitant skills: [moving] {
         ask inhabitant at_distance information_spread_distance {
             if !self.is_aware and flip(information_spread_rate) {
                 self.is_aware <- true;
-                self.knows_shelter_location <- flip(0.1);  // 10% learn shelter
+                self.knows_shelter_location <- flip(shelter_knowledge_ratio);
                 if !self.knows_shelter_location {
                     building rand_b <- one_of(building where (!each.is_shelter));
                     if rand_b != nil {
@@ -259,7 +260,7 @@ species inhabitant skills: [moving] {
                 is_fleeing <- false;
                 is_aware <- true;
                 flee_target <- nil;
-                knows_shelter_location <- flip(0.1);
+                knows_shelter_location <- flip(shelter_knowledge_ratio);
                 if !knows_shelter_location {
                     building rand_b <- one_of(building where (!each.is_shelter));
                     if rand_b != nil {
@@ -341,6 +342,7 @@ experiment flood_ext1_exp type: gui {
     parameter "Water recession speed (m/cycle)" var: flood_recession_speed category: "Flood" min: 1 max: 500;
     parameter "Information spread rate" var: information_spread_rate category: "Information" min: 0.0 max: 1.0;
     parameter "Shelter detection distance (m)" var: shelter_detection_distance category: "Extension 1" min: 10.0 max: 50.0;
+    parameter "Shelter knowledge ratio (among aware)" var: shelter_knowledge_ratio category: "Extension 1" min: 0.0 max: 1.0;
 
     output {
         display map type: 3d {
